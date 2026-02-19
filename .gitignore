@@ -5,6 +5,8 @@
 *.xml
 2G_MODEL/
 3G_4G_MODEL/
+exported_models/
+runs/
 
 # Test data - do not commit
 SAMPLES_UT/

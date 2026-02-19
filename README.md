@@ -23,12 +23,46 @@ You must place your exported OpenVINO models in the following directories:
     metadata.yaml
 ```
 
-### How to Export Models from Ultralytics
+### How to Export Models (Ultralytics to OpenVINO)
+
+Use the included `export_openvino.py` script to convert trained `.pt` weights to OpenVINO IR format:
+
+```bash
+# Install ultralytics (only needed for export, not for inference)
+pip install ultralytics
+
+# Export with default preset (speed - INT8 quantized)
+python export_openvino.py --weights best.pt --imgsz 640
+
+# Export with specific preset
+python export_openvino.py --weights best.pt --imgsz 640 --preset accuracy
+
+# Export 2G model with custom image size
+python export_openvino.py --weights 2g_best.pt --imgsz 1216 --preset speed
+
+# Force INT8 regardless of preset
+python export_openvino.py --weights best.pt --int8
+
+# Specify output directory
+python export_openvino.py --weights best.pt --output-dir ./3G_4G_MODEL/best_openvino_model
+```
+
+#### Export Presets
+
+| Preset | Quantization | Size | Inference | Use Case |
+|--------|-------------|------|-----------|----------|
+| `speed` | INT8 | ~3-4 MB | ~5-10ms | Production (default) |
+| `balanced` | INT8 (calibrated) | ~3-5 MB | ~8-15ms | Production with better accuracy |
+| `accuracy` | FP16 | ~6-8 MB | ~15-25ms | When accuracy matters most |
+| `debug` | FP32 | ~12-14 MB | ~25-40ms | Debugging only |
+
+After export, copy the output model directory to `2G_MODEL/best_int8_openvino_model/` or `3G_4G_MODEL/best_openvino_model/` as needed.
+
+#### Quick Export via Python API
 
 ```python
 from ultralytics import YOLO
 
-# Load your trained model
 model = YOLO("best.pt")
 
 # Export to OpenVINO (FP32)
@@ -153,6 +187,7 @@ Scanner AI Service (TCP :4444)
 
 ```
 .
+├── export_openvino.py      # Convert Ultralytics .pt to OpenVINO IR
 ├── scanner.py              # Main inference service
 ├── ai_colormap.py          # Viridis colormap & normalization
 ├── viridis_colormap.py     # Viridis color lookup table
