@@ -1,0 +1,41 @@
+# Models - do not commit
+*.pt
+*.onnx
+*.bin
+*.xml
+2G_MODEL/
+3G_4G_MODEL/
+
+# Test data - do not commit
+SAMPLES_UT/
+SAMPLES_LOW_POWER/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.coverage
+coverage.xml
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Virtual environments
+.venv/
+venv/
+
+# UV
+uv.lock
+
+# Dummy test images
+dummy.jpg

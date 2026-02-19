@@ -1,0 +1,23 @@
+services:
+  cellularscanner:
+    image: "docker.artifactory.internal/cellularscanner/cellularscanner_ai:${SCANNER_AI_VERSION:-wrong_version_check_dotenv_file}"
+    container_name: cellular_scanner_ai
+    ports:
+      - 4444:4444
+    volumes:
+      - ${SCANNER_AI_LOW_POWER_SAMPLES}:/app/SAMPLES_LOW_POWER
+    environment:
+      - SCANNER_AI_PORT=4444
+      - SCANNER_AI_LOW_POWER_SAMPLES=${SCANNER_AI_LOW_POWER_SAMPLES}
+      - SAVE_SAMPLES=NO
+      - MEM_OPTIMIZATION=YES
+    ulimits:
+      core: -1
+    restart: always
+    tty: true
+    networks:
+      - docker-network
+
+networks:
+  docker-network:
+    external: true

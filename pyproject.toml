@@ -1,0 +1,16 @@
+[project]
+name = "scanner-ai-v3"
+version = "3.0.0"
+description = "Spectrum channel detector - OpenVINO runtime (no PyTorch/Ultralytics)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24.0",
+    "Pillow",
+    "openvino>=2024.0.0",
+    "opencv-python-headless>=4.8.0",
+    "protobuf==3.20",
+]
+
+[project.optional-dependencies]
+test = ["coverage", "pytest"]
