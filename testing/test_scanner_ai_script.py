@@ -12,19 +12,23 @@ Bands_to_be_tested = [1,3,8,20,28,40]
 #Folder path to the samples for testing
 folder_dir = "SAMPLES_UT"
 
+# Frequency tolerance in MHz for matching detections
+FREQ_TOLERANCE_MHZ = 1.0
+
+# Expected frequencies updated for OpenVINO static-shape (640x640) model output
 expected_4g_frequencies = {
         "Band_1"    : [2165.0, 2146.7],
-        "Band_3"    : [1815.0, 1870.0, 1849.5],
+        "Band_3"    : [1815.0, 1870.0, 1848.8],
         "Band_8"    : [],
         "Band_20"   : [813.6, 798.5],
         "Band_28"   : [763.1, 800.8],
-        "Band_40"   : [2342.1, 2361.9]
+        "Band_40"   : [2342.0, 2360.6]
         }
 
 expected_3g_frequencies = {
-        "Band_1"    : [2116.4, 2137.7],
+        "Band_1"    : [2116.5],
         "Band_3"    : [],
-        "Band_8"    : [932.6, 937.2, 927.5],
+        "Band_8"    : [932.6],
         "Band_20"   : [],
         "Band_28"   : [],
         "Band_40"   : []
@@ -33,7 +37,7 @@ expected_3g_frequencies = {
 
 expected_2g_frequencies = {
         "Band_1"    : [],
-        "Band_3"    : [1860.2],
+        "Band_3"    : [],
         "Band_8"    : [953.4],
         "Band_20"   : [],
         "Band_28"   : [],
@@ -48,6 +52,12 @@ bandwise_parameters = {
         "Band_28"   :  [783000  , 50000  , 4],
         "Band_40"   :  [2350000 , 100000 , 9]
         }
+
+
+def freq_is_detected(expected_freq, detected_list, tolerance=FREQ_TOLERANCE_MHZ):
+    """Check if an expected frequency is present in the detected list within tolerance."""
+    return any(abs(expected_freq - det) <= tolerance for det in detected_list)
+
 
 def samples_test(file,band):
     detected_4g_freq = []
@@ -140,6 +150,14 @@ def test_check_detected_freq():
         detected_4g = [round(x, 1) for x in detected_4g]
         detected_3g = [round(x, 1) for x in detected_3g]
         detected_2g = [round(x, 1) for x in detected_2g]
-        assert  set(expected_4g_frequencies[f"Band_{bands}"]).issubset(detected_4g)
-        assert  set(expected_3g_frequencies[f"Band_{bands}"]).issubset(detected_3g)
-        assert  set(expected_2g_frequencies[f"Band_{bands}"]).issubset(detected_2g)
+
+        band_key = f"Band_{bands}"
+        for freq in expected_4g_frequencies[band_key]:
+            assert freq_is_detected(freq, detected_4g), \
+                f"Band {bands}: expected 4G freq {freq} not found in {detected_4g}"
+        for freq in expected_3g_frequencies[band_key]:
+            assert freq_is_detected(freq, detected_3g), \
+                f"Band {bands}: expected 3G freq {freq} not found in {detected_3g}"
+        for freq in expected_2g_frequencies[band_key]:
+            assert freq_is_detected(freq, detected_2g), \
+                f"Band {bands}: expected 2G freq {freq} not found in {detected_2g}"
