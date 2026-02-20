@@ -34,7 +34,7 @@ COPY --from=builder /app/python /app/python
 
 RUN mkdir -p /app/SAMPLES_LOW_POWER
 
-COPY 2G_MODEL/best_openvino_model /app/2G_MODEL/best_openvino_model
+COPY 2G_MODEL/best_int8_openvino_model /app/2G_MODEL/best_int8_openvino_model
 COPY 3G_4G_MODEL/best_openvino_model /app/3G_4G_MODEL/best_openvino_model
 COPY ./*.py /app
 

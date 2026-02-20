@@ -1,62 +1,98 @@
-# Scanner AI - Ultralytics YOLO to OpenVINO
+# Scanner AI v2 - OpenVINO Runtime (No PyTorch/Ultralytics)
 
-Spectrum channel detector for 2G/3G/4G cellular frequencies. Converts trained Ultralytics YOLO models (.pt) to OpenVINO FP32 and runs inference without PyTorch dependencies.
+Spectrum channel detector for 2G/3G/4G cellular frequencies. Runs YOLO models converted to OpenVINO IR format — no PyTorch or Ultralytics dependency at runtime.
+
+## Architecture
+
+```
+Spectrogram (float32 FFT data)
+  → Normalize power values (-130 to -3 dBm)
+  → Apply Viridis colormap → BGR uint8 image
+  → 3G/4G detection (YOLOv12n, static 640x640, OpenVINO)
+  → Extract 2G regions (gaps between 3G/4G detections)
+  → 2G detection (YOLO11n INT8, dynamic shape, OpenVINO)
+  → Convert pixel coordinates → frequency (MHz)
+  → Return detected frequencies via protobuf over TCP
+```
 
 ## Quick Start
 
-### 1. Install dependencies
+### 1. Export models (requires ultralytics, one-time only)
 
 ```bash
 pip install ultralytics openvino
-```
-
-### 2. Place your trained models
-
-```
-2G_MODEL/best.pt
-3G_4G_MODEL/best.pt
-```
-
-### 3. Convert to OpenVINO
-
-```bash
 python export_openvino.py
 ```
 
-This finds `.pt` files in `2G_MODEL/` and `3G_4G_MODEL/`, converts them to OpenVINO FP32 (always accurate, no quantization), and outputs to `best_openvino_model/` in each directory.
+This converts `.pt` files in `2G_MODEL/` and `3G_4G_MODEL/` to OpenVINO FP32 format.
 
-### 4. Run
-
-**Docker (recommended):**
+For the 2G model, INT8 quantization is recommended for faster inference and lower memory:
 ```bash
-docker build -t  .
-docker run -p 4444:4444 scanner-ai
+# Export with INT8 (requires calibration data)
+yolo export model=2G_MODEL/best.pt format=openvino int8=True imgsz=1216
+mv 2G_MODEL/best_int8_openvino_model/ 2G_MODEL/best_int8_openvino_model/
 ```
 
-**Direct:**
-```bash
-pip install -r requirements.txt
-python scanner.py
-```
-
-## Model Directory Structure
-
-After export:
+### 2. Place models
 
 ```
 2G_MODEL/
-    best.pt                    # trained model (input)
-    best_openvino_model/       # converted model (output)
+    best_int8_openvino_model/    # INT8 quantized (preferred, faster)
+        best.xml
+        best.bin
+        metadata.yaml
+    best_openvino_model/         # FP32 fallback
         best.xml
         best.bin
         metadata.yaml
 
 3G_4G_MODEL/
-    best.pt
-    best_openvino_model/
+    best_openvino_model/         # FP32 (static 640x640)
         best.xml
         best.bin
         metadata.yaml
+```
+
+### 3. Run
+
+**Docker (recommended):**
+```bash
+docker build -t scanner-ai .
+docker run -p 4444:4444 -e MEM_OPTIMIZATION=YES scanner-ai
+```
+
+**Direct:**
+```bash
+pip install -r requirements.txt
+MEM_OPTIMIZATION=YES python scanner.py
+```
+
+## Runtime Dependencies
+
+- `openvino >= 2024.0.0` — inference engine
+- `opencv-python-headless >= 4.8.0` — image preprocessing
+- `numpy >= 1.24.0` — array operations
+- `protobuf == 3.20` — TCP message serialization
+- `Pillow` — image utilities
+
+No PyTorch, no Ultralytics, no CUDA required at runtime.
+
+## Models
+
+| Model | Architecture | Input Shape | Classes | Quantization |
+|-------|-------------|-------------|---------|--------------|
+| 2G | YOLO11n | Dynamic (stride 32) | 2G (GSM) | INT8 (recommended) or FP32 |
+| 3G/4G | YOLOv12n | Static 640x640 | 3G (UMTS), 4G (LTE), 4G-TDD | FP32 |
+
+### Important: 3G/4G model has static input shape
+
+The YOLOv12n 3G/4G model uses attention layers that contain hardcoded reshape operations, preventing dynamic input shapes. The model accepts **only 640x640 input** (`auto=False` letterboxing).
+
+Wide spectrogram images (e.g., 598x4002) get letterboxed with significant padding, which may reduce detection sensitivity compared to the original ultralytics .pt model that supported dynamic shapes.
+
+**To improve 3G/4G accuracy:** Re-export using **YOLO11n** (no attention layers) with `dynamic=True`:
+```bash
+yolo export model=3G_4G_MODEL/best.pt format=openvino dynamic=True imgsz=640
 ```
 
 ## Environment Variables
@@ -65,5 +101,44 @@ After export:
 |----------|---------|-------------|
 | `SCANNER_AI_IP` | `0.0.0.0` | Host to bind to |
 | `SCANNER_AI_PORT` | `4444` | TCP port |
-| `SAVE_SAMPLES` | `NO` | Save spectrogram images |
-| `MEM_OPTIMIZATION` | `YES` | Memory optimization for large bands |
+| `SAVE_SAMPLES` | `NO` | Save spectrogram images to `SAMPLES_LOW_POWER/` |
+| `MEM_OPTIMIZATION` | `YES` | Split large bands (>100 MHz) into chunks |
+
+## Protocol
+
+TCP socket on port 4444 using protobuf messages:
+
+1. Client → `AIPredictSampleReq` (band parameters: center freq, bandwidth, chunks)
+2. Server ← `AIPredictSampleRes` (acknowledgment)
+3. Client → `AISampleDataReq` (float32 spectrum data)
+4. Server ← `AISampleDataRes` (detected frequencies: `lte_freqs`, `umts_freqs`, `gsm_freqs`)
+
+## Testing
+
+Start the scanner, then run pytest:
+
+```bash
+MEM_OPTIMIZATION=YES python scanner.py &
+sleep 20  # wait for model warmup
+pytest testing/test_scanner_ai_script.py -v
+```
+
+Test samples are in `SAMPLES_UT/` (6 bands: B1, B3, B8, B20, B28, B40).
+
+## Performance
+
+- Shared OpenVINO Core instance across models
+- 2G model uses INT8 quantization for faster inference
+- Singleton colormap/normalizer (no per-call allocation)
+- Direct float32 blob construction (skips uint8→float32 conversion)
+- Memory optimization splits large bands (>100 MHz) into 60 MHz chunks with 12 MHz overlap
+- Thread-safe: each connection uses local result lists
+
+| Band | Bandwidth | Inference Time |
+|------|-----------|---------------|
+| B20 | 30 MHz | ~140 ms |
+| B28 | 50 MHz | ~285 ms |
+| B1 | 60 MHz | ~360 ms |
+| B3 | 80 MHz | ~360 ms |
+| B8 | 40 MHz | ~330 ms |
+| B40 | 100 MHz | ~1.9 s |
