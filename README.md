@@ -8,7 +8,7 @@ Spectrum channel detector for 2G/3G/4G cellular frequencies. Runs YOLO models co
 Spectrogram (float32 FFT data)
   → Normalize power values (-130 to -3 dBm)
   → Apply Viridis colormap → BGR uint8 image
-  → 3G/4G detection (YOLOv12n, static 640x640, OpenVINO)
+  → 3G/4G detection (YOLOv12n, dynamic shape, OpenVINO)
   → Extract 2G regions (gaps between 3G/4G detections)
   → 2G detection (YOLO11n INT8, dynamic shape, OpenVINO)
   → Convert pixel coordinates → frequency (MHz)
@@ -24,7 +24,7 @@ pip install ultralytics openvino
 python export_openvino.py
 ```
 
-This converts `.pt` files in `2G_MODEL/` and `3G_4G_MODEL/` to OpenVINO FP32 format.
+This converts `.pt` files in `2G_MODEL/` and `3G_4G_MODEL/` to OpenVINO FP32 format with `dynamic=True` for flexible input sizes.
 
 For the 2G model, INT8 quantization is recommended for faster inference and lower memory:
 ```bash
@@ -47,7 +47,7 @@ mv 2G_MODEL/best_int8_openvino_model/ 2G_MODEL/best_int8_openvino_model/
         metadata.yaml
 
 3G_4G_MODEL/
-    best_openvino_model/         # FP32 (static 640x640)
+    best_openvino_model/         # FP32 (dynamic shape)
         best.xml
         best.bin
         metadata.yaml
@@ -82,18 +82,9 @@ No PyTorch, no Ultralytics, no CUDA required at runtime.
 | Model | Architecture | Input Shape | Classes | Quantization |
 |-------|-------------|-------------|---------|--------------|
 | 2G | YOLO11n | Dynamic (stride 32) | 2G (GSM) | INT8 (recommended) or FP32 |
-| 3G/4G | YOLOv12n | Static 640x640 | 3G (UMTS), 4G (LTE), 4G-TDD | FP32 |
+| 3G/4G | YOLOv12n | Dynamic (stride 32) | 3G (UMTS), 4G (LTE), 4G-TDD | FP32 |
 
-### Important: 3G/4G model has static input shape
-
-The YOLOv12n 3G/4G model uses attention layers that contain hardcoded reshape operations, preventing dynamic input shapes. The model accepts **only 640x640 input** (`auto=False` letterboxing).
-
-Wide spectrogram images (e.g., 598x4002) get letterboxed with significant padding, which may reduce detection sensitivity compared to the original ultralytics .pt model that supported dynamic shapes.
-
-**To improve 3G/4G accuracy:** Re-export using **YOLO11n** (no attention layers) with `dynamic=True`:
-```bash
-yolo export model=3G_4G_MODEL/best.pt format=openvino dynamic=True imgsz=640
-```
+Both models are exported with `dynamic=True`, which traces symbolic dimensions through the ONNX graph (including attention layers in YOLOv12n). This allows stride-aligned minimal padding (`auto=True`) at runtime, preserving full detection accuracy across all band widths without the resolution loss of static 640x640 letterboxing.
 
 ## Environment Variables
 

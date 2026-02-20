@@ -467,11 +467,11 @@ def predict_samples(center_freq_recv,bandwidth_recv,num_center_frequencies_recv,
         if save_samples == "YES":
             save_sample(colormapped_array, center_freq)
 
-        # 3G/4G inference via OpenVINO (static 640x640 model)
+        # 3G/4G inference via OpenVINO (dynamic shape model: auto=True for stride-aligned padding)
         detections_3g_4g = run_inference(model_3g_4g_compiled, model_3g_4g_output,
                                          colormapped_array, conf_threshold=0.6,
                                          target_h=model_3g_4g_h, target_w=model_3g_4g_w,
-                                         auto=False)
+                                         auto=True)
 
         img_width = colormapped_array.shape[1]
         xval_list = process_results_3g_4g(detections_3g_4g,xval_list,start_freq,bandwidth,img_width,

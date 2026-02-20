@@ -1,8 +1,8 @@
 """
-Export trained YOLO models (.pt) to OpenVINO FP32 format.
+Export trained YOLO models (.pt) to OpenVINO format with dynamic input shapes.
 
 Scans for .pt files in 2G_MODEL/ and 3G_4G_MODEL/ directories and converts
-them to OpenVINO IR format (FP32) for accurate inference.
+them to OpenVINO IR format (FP32) with dynamic=True for flexible input sizes.
 
 Usage:
     python export_openvino.py
@@ -32,17 +32,18 @@ def find_pt_files(root_dir):
 
 
 def export_model(pt_path):
-    """Export a single .pt model to OpenVINO FP32."""
+    """Export a single .pt model to OpenVINO FP32 with dynamic input shapes."""
     print(f"\n  Loading: {pt_path}")
     model = YOLO(pt_path)
     print(f"  Classes: {model.names}")
-    print(f"  Exporting to OpenVINO FP32 (imgsz={IMGSZ})...")
+    print(f"  Exporting to OpenVINO FP32 (imgsz={IMGSZ}, dynamic=True)...")
 
     export_path = model.export(
         format="openvino",
         imgsz=IMGSZ,
         half=False,
         int8=False,
+        dynamic=True,
     )
 
     model_dir = export_path if os.path.isdir(export_path) else os.path.dirname(export_path)

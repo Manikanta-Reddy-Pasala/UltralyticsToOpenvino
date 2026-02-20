@@ -15,20 +15,20 @@ folder_dir = "SAMPLES_UT"
 # Frequency tolerance in MHz for matching detections
 FREQ_TOLERANCE_MHZ = 1.0
 
-# Expected frequencies updated for OpenVINO static-shape (640x640) model output
+# Expected frequencies for OpenVINO dynamic-shape model output (matches .pt model accuracy)
 expected_4g_frequencies = {
         "Band_1"    : [2165.0, 2146.7],
-        "Band_3"    : [1815.0, 1870.0, 1848.8],
+        "Band_3"    : [1815.0, 1870.0, 1849.5],
         "Band_8"    : [],
         "Band_20"   : [813.6, 798.5],
         "Band_28"   : [763.1, 800.8],
-        "Band_40"   : [2342.0, 2360.6]
+        "Band_40"   : [2342.1, 2361.9]
         }
 
 expected_3g_frequencies = {
-        "Band_1"    : [2116.5],
+        "Band_1"    : [2116.4, 2137.7],
         "Band_3"    : [],
-        "Band_8"    : [932.6],
+        "Band_8"    : [932.6, 937.2, 927.5],
         "Band_20"   : [],
         "Band_28"   : [],
         "Band_40"   : []
@@ -37,7 +37,7 @@ expected_3g_frequencies = {
 
 expected_2g_frequencies = {
         "Band_1"    : [],
-        "Band_3"    : [],
+        "Band_3"    : [1860.2],
         "Band_8"    : [953.4],
         "Band_20"   : [],
         "Band_28"   : [],
