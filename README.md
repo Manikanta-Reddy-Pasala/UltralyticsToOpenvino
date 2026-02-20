@@ -29,7 +29,7 @@ This finds `.pt` files in `2G_MODEL/` and `3G_4G_MODEL/`, converts them to OpenV
 
 **Docker (recommended):**
 ```bash
-docker build -t scanner-ai .
+docker build -t  .
 docker run -p 4444:4444 scanner-ai
 ```
 
