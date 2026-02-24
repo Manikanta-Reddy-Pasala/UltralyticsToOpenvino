@@ -11,17 +11,6 @@ services:
       - SCANNER_AI_LOW_POWER_SAMPLES=${SCANNER_AI_LOW_POWER_SAMPLES}
       - SAVE_SAMPLES=NO
       - MEM_OPTIMIZATION=YES
-      - MAX_THREADS=2
-      - OMP_NUM_THREADS=2
-      - OPENBLAS_NUM_THREADS=2
-      - MKL_NUM_THREADS=2
-      - MALLOC_ARENA_MAX=2
-    deploy:
-      resources:
-        limits:
-          memory: 1g
-        reservations:
-          memory: 512m
     ulimits:
       core: -1
     restart: always

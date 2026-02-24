@@ -31,4 +31,5 @@ class NormalizePowerValue:
         img = np.clip(img,-130,-3)
         img = np.round(img/self.step_size) * self.step_size
         img = np.abs((img - (-130)) / self.step_size)
+        print("AI COLOR MAP MIN MAX ")
         return img

@@ -9,7 +9,7 @@ dependencies = [
     "Pillow",
     "openvino>=2024.0.0",
     "opencv-python-headless>=4.8.0",
-    "protobuf>=4.21.0",
+    "protobuf==3.20",
 ]
 
 [project.optional-dependencies]

@@ -40,12 +40,6 @@ COPY ./*.py /app
 
 # Set up environment variables for production
 ENV PATH="/app/.venv/bin:$PATH"
-# Limit OpenBLAS/MKL threads to prevent memory bloat
-ENV OMP_NUM_THREADS=2
-ENV OPENBLAS_NUM_THREADS=2
-ENV MKL_NUM_THREADS=2
-# Limit malloc arena count to reduce virtual memory fragmentation
-ENV MALLOC_ARENA_MAX=2
 
 EXPOSE 4444
 
