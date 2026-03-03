@@ -28,6 +28,13 @@
 - Multiple redundant `getBusinessData()` calls → cache once in saveData, pass to sub-methods
 - `generateBillNumber` also called without businessData at ~line 2856 (vendor loading flow)
 
+## Kubernetes Clusters
+- **ALWAYS default to QA cluster** unless explicitly asked for prod
+- Full details in `kubernetes-clusters.md`
+- QA kubeconfig: `.qa-kubeconfig`, API: `apiqa.oneshell.in`, mongos: `qa-cluster-mongos-0`
+- Prod kubeconfig: `.prod-kubeconfig`, API: `api.oneshell.in`, mongos: `prod-cluster-mongos-0`
+- Always use `--insecure-skip-tls-verify` with kubectl
+
 ## Servers
 - **ClawdBot VM**: 77.42.68.16 (root, SSH key auth) — runs ClawdBot at /opt/clawdbot
 - **Free5GC Server**: 135.181.93.114 (root, SSH key from ClawdBot VM) — 5G SA setup, AMF with gRPC health check
